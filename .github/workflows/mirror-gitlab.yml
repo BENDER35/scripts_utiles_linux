@@ -46,6 +46,10 @@ jobs:
           # Elimina la referencia simbolica origin/HEAD para no crear una rama "HEAD" en GitLab.
           git update-ref -d refs/remotes/origin/HEAD || true
 
+          # actions/checkout convierte en lightweight la etiqueta del evento al hacer checkout.
+          # Volvemos a traer las etiquetas anotadas reales desde GitHub antes de espejarlas.
+          git fetch --force --prune --prune-tags --tags origin
+
           # Espeja todas las ramas y etiquetas, borrando en GitLab lo que ya no exista en GitHub.
           git push --force --prune gitlab \
             "+refs/remotes/origin/*:refs/heads/*" \
