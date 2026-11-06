@@ -48,7 +48,8 @@ jobs:
           git fetch --force --prune --prune-tags --tags origin
 
           # El fetch recrea origin/HEAD; si se empuja crearia una rama "HEAD" invalida en GitLab.
-          git update-ref -d refs/remotes/origin/HEAD || true
+          # No usar "update-ref -d": al ser un symref, tambien borra origin/main.
+          git remote set-head origin -d || true
 
           # Espeja todas las ramas, borrando en GitLab las que ya no existan en GitHub.
           git push --force --prune gitlab "+refs/remotes/origin/*:refs/heads/*"
