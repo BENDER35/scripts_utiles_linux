@@ -1,0 +1,52 @@
+name: Mirror to GitLab
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-gitlab
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    name: Mirror GitHub -> GitLab
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure SSH for GitLab
+        env:
+          GITLAB_SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$GITLAB_SSH_PRIVATE_KEY" > ~/.ssh/gitlab_mirror
+          chmod 600 ~/.ssh/gitlab_mirror
+          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Push all branches and tags to GitLab
+        env:
+          GIT_SSH_COMMAND: "ssh -i ~/.ssh/gitlab_mirror -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+        run: |
+          git remote add gitlab git@gitlab.com:BENDER_5000/scripts_utiles_linux.git
+
+          # Elimina la referencia simbolica origin/HEAD para no crear una rama "HEAD" en GitLab.
+          git update-ref -d refs/remotes/origin/HEAD || true
+
+          # Espeja todas las ramas y etiquetas, borrando en GitLab lo que ya no exista en GitHub.
+          git push --force --prune gitlab \
+            "+refs/remotes/origin/*:refs/heads/*" \
+            "+refs/tags/*:refs/tags/*"
