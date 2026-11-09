@@ -73,14 +73,18 @@ El ciclo de arranque de Linux comienza con el firmware (UEFI/BIOS), que entrega 
    Demonios como `bluetooth.service` consumen recursos e intentan activarse repetidamente mediante D-Bus si el equipo no posee tarjeta física Bluetooth.
 4. **Volcados de error en `/var/crash`:**
    El demonio `apport` genera archivos `.crash` voluminosos cuando un programa falla. Si no se limpian periódicamente, llenan la partición raíz (`/`).
+5. **Pila PAM incompleta en `xfce4-screensaver`:**
+   Si `/etc/pam.d/xfce4-screensaver` carece de la regla `common-account`, el diálogo de desbloqueo falla y genera errores PAM en el Journal. Además, `apport-autoreport.service` puede quedar en estado `failed` tras acumular volcados en `/var/crash`.
 
 ### 🇬🇧 Theory & Mechanics (English)
 The boot sequence hands off from firmware to **GRUB2**, which stages kernel parameters and initiates **systemd**.
 
 - **GRUB Environment Block (`grubenv`):** A rigid 1024-byte block storing boot counter flags. Corrupted sectors cause `grub-editenv` read errors and systemd service failures.
 - **Kernel Modules & Modprobe:** Blacklisting unsupported virtualization drivers (e.g., preventing AMD KVM on Intel silicon) eliminates noise in kernel logs (`dmesg`).
+- **PAM stacks for screen lockers:** Missing `common-account` includes in `/etc/pam.d/xfce4-screensaver` break unlock authentication. Resetting `apport-autoreport` and purging crash dumps clears stale failure states.
 
 #### Scripts de este módulo:
+* [`sistema_y_mantenimiento/corregir_errores_sistema.sh`](sistema_y_mantenimiento/corregir_errores_sistema.sh)
 * [`sistema_y_mantenimiento/fix_errors.sh`](sistema_y_mantenimiento/fix_errors.sh)
 * [`sistema_y_mantenimiento/solucionar_errores.sh`](sistema_y_mantenimiento/solucionar_errores.sh)
 * [`sistema_y_mantenimiento/resolver_errores.sh`](sistema_y_mantenimiento/resolver_errores.sh)
@@ -106,6 +110,15 @@ echo "install kvm_amd /bin/true" | sudo tee /etc/modprobe.d/disable-kvm-amd.conf
 
 # Purgar informes de caídas huérfanos:
 sudo rm -rf /var/crash/*
+
+# Reparar la pila PAM del salvapantallas de XFCE:
+sudo grep -q common-account /etc/pam.d/xfce4-screensaver || \
+  printf '@include common-auth\n@include common-account\n@include common-password\n@include common-session\n' | sudo tee /etc/pam.d/xfce4-screensaver
+
+# Resetear el estado de apport y sanear el chroot de Postfix:
+sudo systemctl reset-failed apport-autoreport.service
+sudo chown root:root /var/spool/postfix/etc/resolv.conf
+sudo chmod 644 /var/spool/postfix/etc/resolv.conf
 ```
 
 ---

@@ -31,6 +31,7 @@ scripts_reparacion/
 ├── retroarch/                    # Mantenimiento y logs de RetroArch (Flatpak)
 │   └── reparar_retroarch.sh
 ├── sistema_y_mantenimiento/      # Limpieza general, GRUB, systemd, /var/crash
+│   ├── corregir_errores_sistema.sh
 │   ├── corregir_sistema_root.sh
 │   ├── fix_errors.sh
 │   ├── fix_system_errors.sh
@@ -60,6 +61,7 @@ scripts_reparacion/
 | **permisos** | `reparar_permisos.sh` | Root (`sudo`) | Restaura propiedad y permisos en `.config`, `.cache` y `.local` del usuario. |
 | **pipewire_scrcpy** | `reparar_pipewire_scrcpy.sh` | Root (`sudo`) | Instala `libspa-0.2-libcamera`, reglas udev Android y reinicia WirePlumber. |
 | **retroarch** | `reparar_retroarch.sh` | Usuario | Configura rutas, repara configs y directorios de log para RetroArch Flatpak. |
+| **sistema_y_mantenimiento** | `corregir_errores_sistema.sh` | Root (`sudo`) | Limpia `apport`/`/var/crash`, corrige PAM de XFCE, Postfix, Snap, Flatpak, DPKG y GRUB. |
 | **sistema_y_mantenimiento** | `corregir_sistema_root.sh` | Root (`sudo`) | Mantenimiento integral: VMware, reglas udev, Flatpak, syslog y GRUB. |
 | **sistema_y_mantenimiento** | `fix_errors.sh` | Root (`sudo`) | Regenera `/boot/grub/grubenv` para solventar errores de arranque. |
 | **sistema_y_mantenimiento** | `fix_system_errors.sh` | Root (`sudo`) | Limpieza de volcados huérfanos en `/var/crash` y saneamiento de logs. |
