@@ -40,6 +40,8 @@ scripts_reparacion/
 │   ├── reparar_sistema_y_logs.sh
 │   ├── resolver_errores.sh
 │   └── solucionar_errores.sh
+├── steam/                        # Reparación de dependencias y steamdeps (Python del sistema)
+│   └── reparar_steam_root.sh
 ├── variety_fondo_pantalla/       # Adaptación de fondos Variety para XFCE 4.20
 │   └── set_wallpaper_parcheado.sh
 ├── waydroid_y_wayland/           # Contenedor Waydroid, Cage (X11) y Portales OBS
@@ -70,6 +72,7 @@ scripts_reparacion/
 | **sistema_y_mantenimiento** | `reparar_sistema_y_logs.sh` | Root (`sudo`) | Corrección de fallos en Firefox, Thunderbird, Flatpak, Snap, Xsession y GRUB. |
 | **sistema_y_mantenimiento** | `resolver_errores.sh` | Root (`sudo`) | Módulo DKMS Droidcam, enmascara Bluetooth ausente y deshabilita `kvm_amd`. |
 | **sistema_y_mantenimiento** | `solucionar_errores.sh` | Root (`sudo`) | Resetea `recordfail` en GRUB y subsana errores críticos del sistema. |
+| **steam** | `reparar_steam_root.sh` | Root (`sudo`) | Fuerza el Python nativo en `steamdeps` y reinstala `python3-apt` y librerías de Steam. |
 | **variety_fondo_pantalla** | `set_wallpaper_parcheado.sh` | Usuario | Adapta el cambiador Variety al subsistema Xfconf de XFCE 4.20. |
 | **waydroid_y_wayland** | `iniciar_waydroid.sh` | Usuario | Lanza Waydroid en Wayland nativo o encapsulado en Cage si se está en X11. |
 | **waydroid_y_wayland** | `reparar_wayland_waydroid_obs.sh` | Root (`sudo`) | Instala portales WLR, compositor Cage y configura captura en OBS Studio. |

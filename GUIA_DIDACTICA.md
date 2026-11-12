@@ -236,16 +236,33 @@ systemctl --user restart wireplumber.service
    Las aplicaciones Flatpak se ejecutan en un contenedor aislado con su propio `$HOME` virtual en `~/.var/app/org.libretro.RetroArch/`. Si los directorios de shaders, logs o configuración no coinciden con los permisos del contenedor, RetroArch puede perder perfiles de mandos o fallar silenciosamente al iniciar cores.
 3. **OpenCode AI (`instalar_opencode_root.sh`):**
    Integra de forma global binarios basados en entornos Node/NVM creando enlaces simbólicos protegidos en `/usr/local/bin` con resolución de rutas del usuario original mediante `$SUDO_USER`.
+4. **Steam (`reparar_steam_root.sh`):**
+   El cliente de Steam invoca `steamdeps` mediante la cabecera `#!/usr/bin/env python3`. Si Homebrew/Linuxbrew está instalado, esa ruta resuelve primero al Python de Homebrew (por ejemplo, 3.15) en lugar del Python del sistema (3.14), lo que provoca el error `Couldn't import apt`. El script reescribe la cabecera de `/usr/lib/steam/bin_steamdeps.py` para usar `/usr/bin/python3`, reinstala `python3-apt` y las librerías de Steam, y valida el resultado con `steamdeps --dry-run`.
 
 ### 🇬🇧 Theory & Mechanics (English)
 1. **Engrampa Patching:** Resolves memory corruption and CVE-2023-52138 path-traversal vulnerabilities with upstream patches compiled locally.
 2. **Flatpak Sandboxing:** Isolates runtime configs under `~/.var/app/` requiring synchronized user namespaces.
 3. **OpenCode AI Global Binding:** Hooks user-level node installations into `/usr/local/bin` preserving legitimate environment paths.
+4. **Steam Dependency Resolution:** Steam's `steamdeps` helper uses `#!/usr/bin/env python3`, which can resolve to a Homebrew interpreter without Debian's `apt` bindings. Pinning the shebang to the system Python restores the `python3-apt` module used by Steam's package checks.
 
 #### Scripts de este módulo:
 * [`engrampa/reparar_engrampa_root.sh`](engrampa/reparar_engrampa_root.sh)
 * [`retroarch/reparar_retroarch.sh`](retroarch/reparar_retroarch.sh)
 * [`opencode/instalar_opencode_root.sh`](opencode/instalar_opencode_root.sh)
+* [`steam/reparar_steam_root.sh`](steam/reparar_steam_root.sh)
+
+#### Procedimiento Técnico:
+```bash
+# Forzar el intérprete Python del sistema en steamdeps:
+sudo sed -i 's|^#!/usr/bin/env python3|#!/usr/bin/python3|' /usr/lib/steam/bin_steamdeps.py
+
+# Reinstalar el enlace de python3-apt y las librerías de Steam:
+sudo apt-get update
+sudo apt-get install -y --no-remove python3-apt steam-libs-amd64 steam-libs-i386
+
+# Validar que steamdeps ya importa apt correctamente:
+sudo /usr/bin/steamdeps --dry-run
+```
 
 ---
 
@@ -261,3 +278,5 @@ systemctl --user restart wireplumber.service
 | `grub-editenv create` | Crea un bloque de entorno vacío para GRUB2. | Moderado (Requiere root) |
 | `fallocate -l <tamaño> <ruta>` | Reserva espacio continuo en disco para archivos Swap. | Moderado (Espacio) |
 | `chown -R <user>:<group> <ruta>` | Reasigna la propiedad de archivos y subdirectorios. | Moderado |
+| `sed -i 's/.../.../' <archivo>` | Sustituye texto en un archivo in situ (usado para corregir el shebang de `steamdeps`). | Moderado (Requiere backup) |
+| `/usr/bin/steamdeps --dry-run` | Valida las dependencias de Steam sin instalar paquetes. | Inocuo (Lectura) |
