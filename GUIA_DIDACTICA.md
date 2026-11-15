@@ -236,8 +236,9 @@ systemctl --user restart wireplumber.service
    Las aplicaciones Flatpak se ejecutan en un contenedor aislado con su propio `$HOME` virtual en `~/.var/app/org.libretro.RetroArch/`. Si los directorios de shaders, logs o configuración no coinciden con los permisos del contenedor, RetroArch puede perder perfiles de mandos o fallar silenciosamente al iniciar cores.
 3. **OpenCode AI (`instalar_opencode_root.sh`):**
    Integra de forma global binarios basados en entornos Node/NVM creando enlaces simbólicos protegidos en `/usr/local/bin` con resolución de rutas del usuario original mediante `$SUDO_USER`.
-4. **Steam (`reparar_steam_root.sh`):**
-   El cliente de Steam invoca `steamdeps` mediante la cabecera `#!/usr/bin/env python3`. Si Homebrew/Linuxbrew está instalado, esa ruta resuelve primero al Python de Homebrew (por ejemplo, 3.15) en lugar del Python del sistema (3.14), lo que provoca el error `Couldn't import apt`. El script reescribe la cabecera de `/usr/lib/steam/bin_steamdeps.py` para usar `/usr/bin/python3`, reinstala `python3-apt` y las librerías de Steam, y valida el resultado con `steamdeps --dry-run`.
+4. **Steam (`reparar_steam_root.sh` & `reparar_steam_dispositivos_graficos_proton_root.sh`):**
+   - **Dependencias de paquetes y steamdeps:** El cliente invoca `steamdeps` mediante la cabecera `#!/usr/bin/env python3`. Si Homebrew/Linuxbrew está instalado, resuelve al Python de Homebrew provocando el error `Couldn't import apt`. Se soluciona forzando `/usr/bin/python3` y reinstalando librerías.
+   - **Dispositivos, Gráficos y Proton:** Configura reglas udev de mandos (`steam-devices`), backend VDPAU/VA-API (`libvdpau-va-gl1`), desactiva variables globales conflictivas (`LIBVA_DRIVER_NAME`), y aumenta los límites de descriptores de archivos `nofile` para evitar cuelgues con Esync/Proton.
 
 ### 🇬🇧 Theory & Mechanics (English)
 1. **Engrampa Patching:** Resolves memory corruption and CVE-2023-52138 path-traversal vulnerabilities with upstream patches compiled locally.
@@ -250,6 +251,7 @@ systemctl --user restart wireplumber.service
 * [`retroarch/reparar_retroarch.sh`](retroarch/reparar_retroarch.sh)
 * [`opencode/instalar_opencode_root.sh`](opencode/instalar_opencode_root.sh)
 * [`steam/reparar_steam_root.sh`](steam/reparar_steam_root.sh)
+* [`steam/reparar_steam_dispositivos_graficos_proton_root.sh`](steam/reparar_steam_dispositivos_graficos_proton_root.sh)
 
 #### Procedimiento Técnico:
 ```bash
