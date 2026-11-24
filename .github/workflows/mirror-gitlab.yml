@@ -54,18 +54,8 @@ jobs:
           # Espeja todas las ramas, borrando en GitLab las que ya no existan en GitHub.
           git push --force --prune gitlab "+refs/remotes/origin/*:refs/heads/*"
 
-          # GitLab rechaza actualizar etiquetas ya existentes. Creamos solo las nuevas
-          # y conservamos las que ya estan en GitLab (incluidas las de las releases).
-          git ls-remote --tags gitlab \
-            | awk '{print $2}' \
-            | sed 's#^refs/tags/##; s#\^{}$##' \
-            | sort -u > /tmp/gitlab_tags.txt
-
-          for tag in $(git tag); do
-            if grep -qx "$tag" /tmp/gitlab_tags.txt; then
-              echo "Etiqueta ya existente en GitLab (se conserva): $tag"
-            else
-              echo "Creando etiqueta en GitLab: $tag"
-              git push gitlab "refs/tags/${tag}:refs/tags/${tag}"
-            fi
-          done
+          # Espeja tambien todas las etiquetas, con --force para corregir etiquetas
+          # lightweight que versiones anteriores del workflow crearon en GitLab
+          # (p. ej. v1.0.0 es anotada en GitHub pero era lightweight en GitLab).
+          # No se usa --prune para no borrar etiquetas de releases creadas en GitLab.
+          git push --force gitlab "+refs/tags/*:refs/tags/*"
