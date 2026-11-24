@@ -15,7 +15,10 @@ This educational manual breaks down the theoretical foundations, diagnostic work
 5. [Módulo 5: Servidores Gráficos, Wayland y Contenedores / Display Servers, Wayland & Containers](#módulo-5-servidores-gráficos-wayland-y-contenedores--display-servers-wayland--containers)
 6. [Módulo 6: Audio (PipeWire) y Dispositivos (UDEV / Scrcpy) / Audio & Device Access](#módulo-6-audio-pipewire-y-dispositivos-udev--scrcpy--audio--device-access)
 7. [Módulo 7: Aplicaciones Específicas y Sandboxes / Dedicated Apps & Sandboxes](#módulo-7-aplicaciones-específicas-y-sandboxes--dedicated-apps--sandboxes)
-8. [Glosario de Comandos Esenciales / Essential Commands Glossary](#glosario-de-comandos-esenciales--essential-commands-glossary)
+8. [Módulo 8: Redes en Virtualización y Contenedores / Virtualization & Container Networking](#módulo-8-redes-en-virtualización-y-contenedores--virtualization--container-networking)
+9. [Módulo 9: Desinstalación y Purga Profunda de Software Multigestor / Multi-Package Software Removal & Deep Clean](#módulo-9-desinstalación-y-purga-profunda-de-software-multigestor--multi-package-software-removal--deep-clean)
+10. [Módulo 10: Automatización Técnica, Documentación y Utilidades / Technical Automation, Documentation & Utilities](#módulo-10-automatización-técnica-documentación-y-utilidades--technical-automation-documentation--utilities)
+11. [Glosario de Comandos Esenciales / Essential Commands Glossary](#glosario-de-comandos-esenciales--essential-commands-glossary)
 
 ---
 
@@ -31,6 +34,7 @@ En distribuciones basadas en Debian/Ubuntu:
 1. **Ficheros de Bloqueo Huérfanos (`lock` / `lock-frontend`):** Si un proceso de actualización (como `unattended-upgrades` o una terminal interrumpida con Ctrl+C) se cancela abruptamente, los archivos de bloqueo quedan en `/var/lib/dpkg/lock-frontend` y `/var/lib/apt/lists/lock`, impidiendo cualquier otra operación.
 2. **Paquetes a medio configurar (`half-configured`) o rotos:** DPKG interrumpe la instalación si falla un script posterior a la instalación (`postinst`).
 3. **Paquetes residuales (`rc`):** Paquetes cuyos binarios se eliminaron pero conservan archivos de configuración dispersos.
+4. **Repositorios y PPAs rotos o duplicados:** Frecuentes errores `404 Not Found` en firmas GPG obsoletas que abortan `apt update`.
 
 ### 🇬🇧 Theory & Mechanics (English)
 In Debian/Ubuntu architectures:
@@ -40,6 +44,7 @@ In Debian/Ubuntu architectures:
 
 #### Scripts de este módulo:
 * [`dpkg_apt/reparar_dpkg.sh`](dpkg_apt/reparar_dpkg.sh)
+* [`dpkg_apt/apt_check.py`](dpkg_apt/apt_check.py)
 * [`pacstall/reparar_pacstall.sh`](pacstall/reparar_pacstall.sh)
 
 #### Procedimiento de Reparación Aplicado:
@@ -55,6 +60,9 @@ dpkg -l | awk '/^rc/ {print $2}' | xargs -r sudo dpkg --purge
 
 # 4. Saneamiento de caché
 sudo apt-get clean && sudo apt-get autoremove -y
+
+# 5. Diagnóstico de repositorios y servicios con Python:
+python3 dpkg_apt/apt_check.py
 ```
 
 ---
@@ -75,6 +83,8 @@ El ciclo de arranque de Linux comienza con el firmware (UEFI/BIOS), que entrega 
    El demonio `apport` genera archivos `.crash` voluminosos cuando un programa falla. Si no se limpian periódicamente, llenan la partición raíz (`/`).
 5. **Pila PAM incompleta en `xfce4-screensaver`:**
    Si `/etc/pam.d/xfce4-screensaver` carece de la regla `common-account`, el diálogo de desbloqueo falla y genera errores PAM en el Journal. Además, `apport-autoreport.service` puede quedar en estado `failed` tras acumular volcados en `/var/crash`.
+6. **Corrupción o saturación de logs del sistema (`journald`/`syslog`):**
+   Archivos rotados corruptos o desbordados bloquean la lectura de eventos críticos del sistema.
 
 ### 🇬🇧 Theory & Mechanics (English)
 The boot sequence hands off from firmware to **GRUB2**, which stages kernel parameters and initiates **systemd**.
@@ -82,17 +92,22 @@ The boot sequence hands off from firmware to **GRUB2**, which stages kernel para
 - **GRUB Environment Block (`grubenv`):** A rigid 1024-byte block storing boot counter flags. Corrupted sectors cause `grub-editenv` read errors and systemd service failures.
 - **Kernel Modules & Modprobe:** Blacklisting unsupported virtualization drivers (e.g., preventing AMD KVM on Intel silicon) eliminates noise in kernel logs (`dmesg`).
 - **PAM stacks for screen lockers:** Missing `common-account` includes in `/etc/pam.d/xfce4-screensaver` break unlock authentication. Resetting `apport-autoreport` and purging crash dumps clears stale failure states.
+- **Deep Log Inspection & System Health:** Utilizing automated diagnostics (`detailed_check.py`, `inspect_logs.py`, `corregir_sistema_logs.sh`) isolates active core dumps and journal errors without service interruption.
 
 #### Scripts de este módulo:
 * [`sistema_y_mantenimiento/corregir_errores_sistema.sh`](sistema_y_mantenimiento/corregir_errores_sistema.sh)
-* [`sistema_y_mantenimiento/fix_errors.sh`](sistema_y_mantenimiento/fix_errors.sh)
-* [`sistema_y_mantenimiento/solucionar_errores.sh`](sistema_y_mantenimiento/solucionar_errores.sh)
-* [`sistema_y_mantenimiento/resolver_errores.sh`](sistema_y_mantenimiento/resolver_errores.sh)
-* [`sistema_y_mantenimiento/reparar_errores_sistema.sh`](sistema_y_mantenimiento/reparar_errores_sistema.sh)
+* [`sistema_y_mantenimiento/corregir_sistema_logs.sh`](sistema_y_mantenimiento/corregir_sistema_logs.sh)
 * [`sistema_y_mantenimiento/corregir_sistema_root.sh`](sistema_y_mantenimiento/corregir_sistema_root.sh)
-* [`sistema_y_mantenimiento/reparar_sistema_y_logs.sh`](sistema_y_mantenimiento/reparar_sistema_y_logs.sh)
+* [`sistema_y_mantenimiento/detailed_check.py`](sistema_y_mantenimiento/detailed_check.py)
+* [`sistema_y_mantenimiento/fix_errors.sh`](sistema_y_mantenimiento/fix_errors.sh)
 * [`sistema_y_mantenimiento/fix_system_errors.sh`](sistema_y_mantenimiento/fix_system_errors.sh)
 * [`sistema_y_mantenimiento/fix_system_issues.sh`](sistema_y_mantenimiento/fix_system_issues.sh)
+* [`sistema_y_mantenimiento/inspect_logs.py`](sistema_y_mantenimiento/inspect_logs.py)
+* [`sistema_y_mantenimiento/reparar_errores_sistema.sh`](sistema_y_mantenimiento/reparar_errores_sistema.sh)
+* [`sistema_y_mantenimiento/reparar_sistema_y_logs.sh`](sistema_y_mantenimiento/reparar_sistema_y_logs.sh)
+* [`sistema_y_mantenimiento/resolver_errores.sh`](sistema_y_mantenimiento/resolver_errores.sh)
+* [`sistema_y_mantenimiento/solucionar_errores.sh`](sistema_y_mantenimiento/solucionar_errores.sh)
+* [`sistema_y_mantenimiento/user_fixes.py`](sistema_y_mantenimiento/user_fixes.py)
 
 #### Procedimiento de Reparación Aplicado:
 ```bash
@@ -119,6 +134,10 @@ sudo grep -q common-account /etc/pam.d/xfce4-screensaver || \
 sudo systemctl reset-failed apport-autoreport.service
 sudo chown root:root /var/spool/postfix/etc/resolv.conf
 sudo chmod 644 /var/spool/postfix/etc/resolv.conf
+
+# Ejecutar chequeo detallado y corrección de logs:
+sudo bash sistema_y_mantenimiento/corregir_sistema_logs.sh
+python3 sistema_y_mantenimiento/detailed_check.py
 ```
 
 ---
@@ -167,8 +186,9 @@ En el modelo de seguridad POSIX de Linux:
 ### 🇬🇧 Theory & Mechanics (English)
 Running utilities inside `$HOME` using `sudo` pollutes the home directory hierarchy with `root:root` ownership, breaking desktop session IPC, dconf databases, and MIME type caches.
 
-#### Script de este módulo:
+#### Scripts de este módulo:
 * [`permisos/reparar_permisos.sh`](permisos/reparar_permisos.sh)
+* [`sistema_y_mantenimiento/user_fixes.py`](sistema_y_mantenimiento/user_fixes.py)
 
 #### Procedimiento Técnico de Corrección:
 ```bash
@@ -177,6 +197,9 @@ sudo chown -R bender:bender /home/bender/.config /home/bender/.cache /home/bende
 
 # Asegurar permisos estrictos en la base de datos de dconf (evita lectura por terceros):
 chmod 700 /home/bender/.cache/dconf
+
+# Saneamiento de volcados y temporales huérfanos del usuario:
+python3 sistema_y_mantenimiento/user_fixes.py
 ```
 
 ---
@@ -253,18 +276,79 @@ systemctl --user restart wireplumber.service
 * [`steam/reparar_steam_root.sh`](steam/reparar_steam_root.sh)
 * [`steam/reparar_steam_dispositivos_graficos_proton_root.sh`](steam/reparar_steam_dispositivos_graficos_proton_root.sh)
 
+---
+
+## Módulo 8: Redes en Virtualización y Contenedores / Virtualization & Container Networking
+
+### 🇪🇸 Fundamento Teórico (Español)
+Los hipervisores como **VMware Workstation**, **VirtualBox** y **KVM/QEMU** crean adaptadores de red virtuales (puentes y NAT como `vmnet1`, `vmnet8`, `virbr0`, `vboxnet0`).
+- **Conflictos Frecuentes:**
+  1. Demonios de red como `NetworkManager` o `systemd-networkd` intentan gestionar indebidamente las interfaces virtuales de VMware o libvirt, provocando caídas de DHCP en los sistemas invitados.
+  2. Servicios no iniciados (`vmware-networks.service` o `libvirtd.service`) tras actualizaciones del kernel impiden que las máquinas virtuales obtengan conectividad con el exterior.
+  3. Colisión de tablas de enrutamiento y reglas `iptables` / `nftables` entre Docker, Waydroid y los bridges de virtualización.
+
+### 🇬🇧 Theory & Mechanics (English)
+Hypervisors configure bridge and NAT tap devices for guest I/O. Host NetworkManager rules must ignore hypervisor virtual interfaces (`unmanaged-devices`), while kernel filtering rules (`sysctl net.ipv4.ip_forward=1`) must be explicitly enforced.
+
+#### Script de este módulo:
+* [`red_y_vms/reparar_red_vms.sh`](red_y_vms/reparar_red_vms.sh)
+
 #### Procedimiento Técnico:
 ```bash
-# Forzar el intérprete Python del sistema en steamdeps:
-sudo sed -i 's|^#!/usr/bin/env python3|#!/usr/bin/python3|' /usr/lib/steam/bin_steamdeps.py
+# Habilitar reenvío de paquetes IP para puentes y NAT:
+sudo sysctl -w net.ipv4.ip_forward=1
 
-# Reinstalar el enlace de python3-apt y las librerías de Steam:
-sudo apt-get update
-sudo apt-get install -y --no-remove python3-apt steam-libs-amd64 steam-libs-i386
+# Reiniciar servicios de red virtual en VMware:
+sudo vmware-networks --stop && sudo vmware-networks --start
 
-# Validar que steamdeps ya importa apt correctamente:
-sudo /usr/bin/steamdeps --dry-run
+# Diagnóstico y reparación integral de red para VMs:
+sudo bash red_y_vms/reparar_red_vms.sh
 ```
+
+---
+
+## Módulo 9: Desinstalación y Purga Profunda de Software Multigestor / Multi-Package Software Removal & Deep Clean
+
+### 🇪🇸 Fundamento Teórico (Español)
+En estaciones de trabajo modernas, las aplicaciones pueden instalarse a través de múltiples canales simultáneos: **APT**, **Flatpak**, **Snap**, **Pacstall**, **Homebrew**, **Pipx** y **NPM**.
+- **Problema de Desinstalación Incompleta:** Desinstalar un paquete por un solo gestor a menudo deja accesos directos `.desktop` en `~/.local/share/applications/`, servicios de inicio automático en `~/.config/autostart/` y gigabytes de datos residuales en `/var/` o `~/.cache/`.
+- **Software no deseado o parental:** Requiere una auditoría multidominio que busque cadenas clave en todos los gestores y limpie rastros de configuración sin alterar dependencias legítimas del sistema.
+
+### 🇬🇧 Theory & Mechanics (English)
+Modern Linux setups contain multi-layered packaging ecosystems. Full deinstallation requires orchestrating queries across `dpkg`, `flatpak list`, `snap list`, and user space XDG directory caches.
+
+#### Script de este módulo:
+* [`desinstalacion_software/eliminar_software_menores.sh`](desinstalacion_software/eliminar_software_menores.sh)
+
+#### Procedimiento Técnico:
+```bash
+# Ejecutar auditoría y purga profunda multigestor:
+sudo bash desinstalacion_software/eliminar_software_menores.sh
+```
+
+---
+
+## Módulo 10: Automatización Técnica, Documentación y Utilidades / Technical Automation, Documentation & Utilities
+
+### 🇪🇸 Fundamento Teórico (Español)
+1. **Generación Automatizada de Hojas de Cálculo (`reportes_excel/`):**
+   Scripts basados en `openpyxl` y `pandas` que generan informes estructurados (control operativo, SAT de incidencias de TI, balances 2025) aplicando tipografía corporativa, estilos condicionales y fórmulas calculadas de manera determinista.
+2. **Documentación Técnica y Visión Artificial (`guias_y_manuales/`):**
+   - **Xbox Retail & Dev Mode (`xbox_retroarch/`):** Generación de manuales ODT y DOCX con empaquetado de imágenes explicativas sobre estructuras de BIOS, resolución de errores comunes y configuraciones óptimas de núcleos.
+   - **Netbook Samsung N150 (`samsung_n150/`):** Suite de 36 scripts de computer vision (PIL/NumPy) que procesan fotografías de alta resolución del equipo, localizan bordes, puertos (USB, VGA, Ethernet, Audio, Card Reader) e insertan señalizaciones automáticas para ensamblar la infografía técnica de referencia.
+   - **Dispositivos TCL (`tcl/`):** Maquetación de guías técnicas en HTML/ODT.
+3. **Entornos Windows y Compatibilidad (`activacion_windows/`):**
+   Contiene `MAS_AIO.cmd` (Microsoft Activation Scripts) para tareas de soporte técnico multiplataforma en entornos con arranque dual o máquinas virtuales Windows.
+
+### 🇬🇧 Theory & Mechanics (English)
+Programmatic generation of documentation and assets using Python libraries (`Pillow`, `openpyxl`, `python-docx`), streamlining technical reporting and hardware schematic creation.
+
+#### Scripts de este módulo:
+* [`reportes_excel/`](reportes_excel/) (`generate_all_co_sheets.py`, `generate_excel_report.py`, etc.)
+* [`guias_y_manuales/xbox_retroarch/`](guias_y_manuales/xbox_retroarch/) (`build_manual_odt.py`, etc.)
+* [`guias_y_manuales/samsung_n150/`](guias_y_manuales/samsung_n150/) (`make_samsung_n150_guide.py`, etc.)
+* [`guias_y_manuales/tcl/generar_manual_tcl.py`](guias_y_manuales/tcl/generar_manual_tcl.py)
+* [`activacion_windows/MAS_AIO.cmd`](activacion_windows/MAS_AIO.cmd)
 
 ---
 
@@ -280,5 +364,7 @@ sudo /usr/bin/steamdeps --dry-run
 | `grub-editenv create` | Crea un bloque de entorno vacío para GRUB2. | Moderado (Requiere root) |
 | `fallocate -l <tamaño> <ruta>` | Reserva espacio continuo en disco para archivos Swap. | Moderado (Espacio) |
 | `chown -R <user>:<group> <ruta>` | Reasigna la propiedad de archivos y subdirectorios. | Moderado |
-| `sed -i 's/.../.../' <archivo>` | Sustituye texto en un archivo in situ (usado para corregir el shebang de `steamdeps`). | Moderado (Requiere backup) |
-| `/usr/bin/steamdeps --dry-run` | Valida las dependencias de Steam sin instalar paquetes. | Inocuo (Lectura) |
+| `vmware-networks --start` | Inicia demonios y adaptadores virtuales de red en VMware. | Seguro |
+| `sysctl -w net.ipv4.ip_forward=1`| Habilita reenvío IP para interfaces virtuales y bridges. | Moderado |
+| `flatpak list` / `snap list` | Audita paquetes instalados en contenedores Flatpak/Snap. | Inocuo (Lectura) |
+| `python3 <script>.py` | Ejecuta utilidades de diagnóstico, generación u hojas de cálculo. | Inocuo / Seguro |
